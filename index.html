@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recipe Book</title>
+    <link rel="stylesheet" href="style3.css" />
+  </head>
+  <body>
+    <h1>Recipe</h1>
+    <button id="newRecipeBtn">New Recipe</button>
+
+    <div id="newRecipeForm" style="display: none; margin: 1rem 0">
+      <input type="text" id="inputDish" placeholder="Dish" />
+      <input type="text" id="inputIngredients" placeholder="Ingredients" />
+      <input type="text" id="inputType" placeholder="Type" />
+      <input type="text" id="inputOrigin" placeholder="Origin" />
+      <br />
+      <button id="addBtn">Add</button>
+      <button id="cancelBtn">Cancel</button>
+    </div>
+
+    <p id="status">Loading recipes from Google Sheets...</p>
+
+    <div id="recipes"></div>
+
+    <script>
+      const CSV_URL =
+        "https://docs.google.com/spreadsheets/d/e/2PACX-1vQo-cS5gOkQcxvLzZ0X09nN35nI6YP_D8R9ANfzoGWPINJjxHM_rDK00rGgZB_fwfuJHDc9M2YEMWRj/pub?output=csv";
+
+      fetch(CSV_URL)
+        .then((response) => response.text())
+        .then((csv) => {
+          const rows = parseCSV(csv);
+          if (rows.length === 0) return;
+
+          const headers = rows[0];
+          let html = "<table>";
+
+          // Header row
+          html += "<thead><tr>";
+          headers.forEach((header) => {
+            html += "<th>" + header + "</th>";
+          });
+          html += "<th></th>";
+          html += "</tr></thead>";
+
+          // Data rows
+          for (let i = 1; i < rows.length; i++) {
+            html += "<tr>";
+            rows[i].forEach((cell, j) => {
+              const display = cell.replace(/\n/g, "<br>");
+              html += '<td data-label="' + headers[j] + '">' + display + "</td>";
+            });
+            html += '<td><button class="removeBtn" data-row="' + (i + 1) + '">Remove</button></td>';
+            html += "</tr>";
+          }
+
+          html += "</table>";
+
+          document.getElementById("recipes").innerHTML = html;
+          document.getElementById("status").style.display = "none";
+        })
+        .catch((error) => {
+          document.getElementById("status").textContent = "Error loading recipes: " + error.message;
+          console.error(error);
+        });
+
+      // New Recipe form toggle
+      const newRecipeBtn = document.getElementById("newRecipeBtn");
+      const newRecipeForm = document.getElementById("newRecipeForm");
+      const addBtn = document.getElementById("addBtn");
+      const cancelBtn = document.getElementById("cancelBtn");
+
+      newRecipeBtn.addEventListener("click", () => {
+        newRecipeForm.style.display = newRecipeForm.style.display === "none" ? "block" : "none";
+      });
+
+      cancelBtn.addEventListener("click", () => {
+        newRecipeForm.style.display = "none";
+        document.getElementById("inputDish").value = "";
+        document.getElementById("inputIngredients").value = "";
+        document.getElementById("inputType").value = "";
+        document.getElementById("inputOrigin").value = "";
+      });
+
+      const APPS_SCRIPT_URL =
+        "https://script.google.com/macros/s/AKfycbwF8wglMVSKymDMA173Uxm7NYdli5cwSFhIddJxu0l3UhJNkuaAVK3Z3aZoToqowBk/exec";
+
+      addBtn.addEventListener("click", () => {
+        const dish = document.getElementById("inputDish").value.trim();
+        const ingredients = document.getElementById("inputIngredients").value.trim();
+        const type = document.getElementById("inputType").value.trim();
+        const origin = document.getElementById("inputOrigin").value.trim();
+
+        if (!dish) return;
+
+        addBtn.disabled = true;
+        addBtn.textContent = "Adding...";
+
+        const params = new URLSearchParams({ dish, ingredients, type, origin });
+        fetch(APPS_SCRIPT_URL + "?" + params.toString(), {
+          mode: "no-cors",
+        })
+          .then(() => {
+            // Append to table
+            const table = document.querySelector("#recipes table");
+            if (table) {
+              const rowNum = table.rows.length + 1;
+              const tr = document.createElement("tr");
+              const labels = ["Dish", "Ingredients", "Type", "Origin"];
+              [dish, ingredients, type, origin].forEach((val, i) => {
+                const td = document.createElement("td");
+                td.setAttribute("data-label", labels[i]);
+                td.textContent = val;
+                tr.appendChild(td);
+              });
+              const removeTd = document.createElement("td");
+              const removeBtn = document.createElement("button");
+              removeBtn.className = "removeBtn";
+              removeBtn.dataset.row = rowNum;
+              removeBtn.textContent = "Remove";
+              removeTd.appendChild(removeBtn);
+              tr.appendChild(removeTd);
+              table.appendChild(tr);
+            }
+
+            // Clear inputs and hide form
+            document.getElementById("inputDish").value = "";
+            document.getElementById("inputIngredients").value = "";
+            document.getElementById("inputType").value = "";
+            document.getElementById("inputOrigin").value = "";
+            newRecipeForm.style.display = "none";
+          })
+          .catch((error) => {
+            alert("Error adding recipe: " + error.message);
+            console.error(error);
+          })
+          .finally(() => {
+            addBtn.disabled = false;
+            addBtn.textContent = "Add";
+          });
+      });
+
+      // Remove button handler
+      document.getElementById("recipes").addEventListener("click", (e) => {
+        if (!e.target.classList.contains("removeBtn")) return;
+        const btn = e.target;
+        const row = btn.dataset.row;
+        btn.textContent = "Removing...";
+        btn.disabled = true;
+
+        fetch(APPS_SCRIPT_URL + "?action=delete&row=" + row, {
+          mode: "no-cors",
+        })
+          .then(() => {
+            btn.closest("tr").remove();
+          })
+          .catch((error) => {
+            alert("Error removing recipe: " + error.message);
+            btn.textContent = "Remove";
+            btn.disabled = false;
+          });
+      });
+
+      // CSV parser that handles quoted fields with newlines and commas
+      function parseCSV(text) {
+        const rows = [];
+        let row = [];
+        let field = "";
+        let inQuotes = false;
+
+        for (let i = 0; i < text.length; i++) {
+          const ch = text[i];
+
+          if (inQuotes) {
+            if (ch === '"') {
+              if (i + 1 < text.length && text[i + 1] === '"') {
+                field += '"';
+                i++;
+              } else {
+                inQuotes = false;
+              }
+            } else {
+              field += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ",") {
+              row.push(field);
+              field = "";
+            } else if (ch === "\n") {
+              row.push(field);
+              field = "";
+              rows.push(row);
+              row = [];
+            } else if (ch !== "\r") {
+              field += ch;
+            }
+          }
+        }
+
+        if (field || row.length > 0) {
+          row.push(field);
+          rows.push(row);
+        }
+
+        return rows;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,130 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: "Neue";
+  src: url(/NeueHaasUnica-Regular.woff2);
+}
+
+body {
+  font-family: "Neue";
+  padding: 1rem;
+  max-width: 1200px;
+}
+
+h1 {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+table {
+  overflow: hidden;
+}
+
+th {
+  text-align: left;
+  padding: 0.5rem 1rem 0.5rem 0;
+  font-size: 0.8rem;
+}
+
+#newRecipeBtn {
+  font-family: "Neue";
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.2rem;
+  border: none;
+}
+
+#newRecipeForm input {
+  font-family: "Neue";
+  font-size: 0.8rem;
+  padding: 0.2rem;
+  margin-right: 0.2rem;
+  margin-bottom: 0.5rem;
+  border: 1px solid #ccc;
+}
+
+#newRecipeForm button {
+  font-family: "Neue";
+  font-size: 0.8rem;
+  padding: 0.2rem;
+  cursor: pointer;
+  margin-right: 0.2rem;
+  border: none;
+}
+
+td {
+  padding: 0.2rem 1rem 1rem 0;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  vertical-align: top;
+}
+
+.removeBtn {
+  font-family: "Neue";
+  font-size: 0.8rem;
+  padding: 0.2rem;
+  cursor: pointer;
+  border: none;
+  position: relative;
+  top: -2px;
+  background-color: none;
+  text-decoration: underline;
+}
+
+@media (max-width: 600px) {
+  table,
+  thead,
+  tbody,
+  th,
+  tr {
+    display: block;
+  }
+
+  #newRecipeBtn {
+    margin-bottom: 0.5rem;
+  }
+
+  thead tr {
+    display: none;
+  }
+
+  tr {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 0.8rem;
+    margin-bottom: 0.8rem;
+  }
+
+  td {
+    display: block;
+    padding: 0.2rem 0;
+  }
+
+  td:first-child {
+    font-size: 1rem;
+    font-weight: bold;
+    padding-bottom: 0.4rem;
+  }
+
+  td:nth-child(3),
+  td:nth-child(4) {
+    display: inline-block;
+    margin-right: 0.3rem;
+    border: 1px solid #000;
+    padding: 0.1rem 0.4rem;
+  }
+
+  .removeBtn {
+    position: static;
+    margin-top: 0.4rem;
+  }
+
+  #newRecipeForm input {
+    width: 100%;
+    margin-right: 0;
+  }
+}
